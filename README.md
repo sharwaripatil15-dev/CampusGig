@@ -257,17 +257,140 @@ cd "e:\Git Hub\CampusGig-Console-"; g++ -std=c++17 -Wall -Wextra -O2 -static -st
 
 ---
 
-## Future Roadmap: Part 2 (Website Version)
+---
 
-Having validated all core business logic and class boundaries in the C++ console engine, the upcoming development phase transitions CampusGig into a modern web ecosystem:
+## Part 2: Website Version
 
-1. **Frontend Single-Page Application (SPA)**:
-   - Interactive UI built using **React.js**.
-   - Responsive client dashboards, proposal editors, and marketplace search filters.
-2. **C++ Microservice Backend**:
-   - Lightweight C++ REST API powered by **Crow** or **Pistache**.
-   - 100% reuse of the validated `User`, `Job`, `Application`, and `Platform` OOP business classes.
-3. **Relational Database Storage**:
-   - Seamless schema migration from flat-file pipe-delimited text to an ACID-compliant SQL database (**SQLite** or **MySQL**).
-4. **JWT Authentication & Security**:
-   - Secure token-based session handling, college SSO / email confirmation tokens.
+Part 2 delivers a full modern web application that wraps and reuses the exact C++ OOP core logic without rewriting the business rules.
+
+```
+                          +-------------------------------------------------+
+                          |           React Frontend (Port 3000)            |
+                          |  - React Router + AuthContext + Modern CSS UI   |
+                          |  - Role-based Views (Client/Freelancer/Admin)   |
+                          +-----------------------+-------------------------+
+                                                  |
+                                    REST API (JSON over HTTP)
+                                    CORS Enabled + Session Token
+                                                  |
+                          +-----------------------v-------------------------+
+                          |         Crow C++ REST Server (Port 8080)        |
+                          |  - server.cpp (Crow microframework routes)      |
+                          +-----------------------+-------------------------+
+                                                  |
+                              In-Process Reuse (No Rewrite of Logic)
+                                                  |
+     +--------------------------------------------v--------------------------------------------+
+     |                                C++ OOP Domain Core                                      |
+     |  Platform.h / Platform.cpp (Engine, validation rules, search & lifecycle logic)         |
+     |  User.h / User.cpp (Abstract User, Client, Freelancer, Admin)                           |
+     |  Job.h / Job.cpp                                                                        |
+     |  Application.h / Application.cpp                                                        |
+     +--------------------------------------------+--------------------------------------------+
+                                                  |
+                                   Flat-File Pipe Persistence
+                                                  |
+                         +------------------------v------------------------+
+                         | users.txt  |  jobs.txt  |  applications.txt    |
+                         +-------------------------------------------------+
+```
+
+### 1. Technology Stack
+- **Backend**: C++17, [Crow C++ Web Framework](https://crowcpp.org/) (`crow_all.h`), standalone Asio, WinSock2 (`-lws2_32 -lmswsock`).
+- **Frontend**: React 18 / Vite, React Router DOM, Lucide Icons, Vanilla Modern CSS with Glassmorphism & Responsive Design.
+- **Persistence**: Retains the flat-file pipe-delimited format (`users.txt`, `jobs.txt`, `applications.txt`).
+
+---
+
+### 2. REST API Endpoints Overview
+
+| Method | Endpoint | Access Role | Description |
+|---|---|---|---|
+| `GET` | `/` | Public | System status and service health check |
+| `POST` | `/api/register` | Public | Register user (`name, email, password, role`). Enforces `@vit.edu` for Freelancer. |
+| `POST` | `/api/login` | Public | Authenticates credentials, returns user details and session token |
+| `POST` | `/api/logout` | Authenticated | Invalidates active session token |
+| `GET` | `/api/auth/me` | Authenticated | Retrieves current authenticated user profile |
+| `GET` | `/api/jobs` | Public | Lists open jobs (supports `?search=keyword` case-insensitive query) |
+| `POST` | `/api/jobs` | Client | Creates a new job (`title, description, budget > 0`) |
+| `GET` | `/api/client/jobs` | Client | Lists all jobs created by the authenticated client |
+| `GET` | `/api/jobs/:id/applicants` | Client (Owner) | Lists applicants and proposed prices for a job |
+| `POST` | `/api/jobs/:id/apply` | Freelancer | Submits application with `proposedPrice > 0` |
+| `POST` | `/api/jobs/:id/hire` | Client (Owner) | Hires applicant: accepts selected freelancer, rejects others, moves job to `InProgress` |
+| `POST` | `/api/jobs/:id/complete` | Client (Owner) | Marks job as `Completed` |
+| `GET` | `/api/applications/me` | Freelancer | Lists student's submitted proposals and review status |
+| `GET` | `/api/admin/users` | Admin | Lists all registered users (excluding sensitive passwords) |
+| `DELETE` | `/api/admin/users/:id` | Admin | Removes user with cascading deletion of jobs/applications |
+| `GET` | `/api/admin/jobs` | Admin | Oversees all jobs across the system |
+
+---
+
+### 3. Step-by-Step Installation & Execution
+
+#### Prerequisites
+- **C++17 Compiler**: GCC / MinGW-w64 `g++` (installed with MSYS2 or standalone).
+- **Node.js**: v18+ and `npm` (v10+).
+
+#### Running the Backend (Port 8080)
+
+1. Open a terminal in the project root (`CampusGig`):
+   ```powershell
+   # Compile both console and REST API server
+   mingw32-make all
+   ```
+   *(or compile directly with g++)*:
+   ```powershell
+   g++ -std=c++17 -Wall -Wextra -O2 -Iinclude server.cpp Platform.cpp User.cpp Job.cpp Application.cpp -lws2_32 -lmswsock -o campusgig_server.exe
+   ```
+
+2. Start the server:
+   ```powershell
+   .\campusgig_server.exe 8080
+   ```
+   The backend will print:
+   ```
+   ========================================================
+     CAMPUSGIG REST API SERVER STARTED ON PORT 8080
+     Base URL: http://localhost:8080
+     CORS enabled for frontend clients
+   ========================================================
+   ```
+
+#### Running the Frontend (Port 3000)
+
+1. In a second terminal window, navigate to `frontend`:
+   ```powershell
+   cd frontend
+   npm install
+   ```
+
+2. Start the Vite development server:
+   ```powershell
+   npm run dev
+   ```
+3. Open your browser and navigate to:
+   ```
+   http://localhost:3000
+   ```
+
+---
+
+### 4. How the Two Connect
+
+1. **CORS Support**: The C++ Crow backend implements `crow::CORSHandler` allowing cross-origin requests from `http://localhost:3000` (methods: `GET, POST, DELETE, OPTIONS, PUT`; headers: `Content-Type, Authorization, X-Session-Token`).
+2. **Session Persistence**: When logging in or registering, the C++ server returns an authenticated token `cg_<hex>`. The React `AuthContext` stores this token in `localStorage` and automatically sends `Authorization: Bearer <token>` on all subsequent requests.
+3. **Polymorphic Dashboard Dispatcher**: The React frontend uses a single `/dashboard` route that inspects the authenticated user's role and polymorphically renders:
+   - `<ClientDashboard />` for Clients (post jobs, view applicants, hire, complete).
+   - `<FreelancerDashboard />` for Freelancers (browse/search open gigs, apply with proposed price, track proposal status).
+   - `<AdminDashboard />` for Administrators (directory moderation, delete users, view all marketplace jobs).
+4. **Error Consistency**: The API returns identical validation errors to the console application (e.g. `"Freelancer accounts require a valid college email ending in @vit.edu."`), ensuring consistent UX voice across both platforms.
+
+---
+
+### 5. Automated API Verification Suite
+
+To automatically verify all REST endpoints without a browser, run the included test suite:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\test_api.ps1
+```

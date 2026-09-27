@@ -1,1 +1,12 @@
-1|Web Poster|Create Hackathon Poster|50|Completed|2|1
+1|Cultural Fest Teaser & Reel Video Editing|Edit a high-energy 60-second teaser reel and 3 short Instagram promo clips for the upcoming college festival. Raw 4K footage and music provided. Proficiency in Premiere Pro, After Effects, or DaVinci Resolve required.|85|Open|10|3,15
+2|Hackathon Registration & Team Portal|Build a responsive registration portal for a 36-hour national college hackathon. Needs team creation, participant RSVP, dynamic FAQ, and schedule tracker. Tech stack: Next.js, Tailwind CSS, or React + Node.js.|180|Open|2|1
+3|Campus Food Court Ordering Mobile App|Develop a cross-platform mobile application for students to view daily cafeteria menus, place pickup orders, and receive push notifications when food is ready. Flutter or React Native preferred.|220|Open|14|
+4|Autonomous Line Follower Robot CV Script|Write and optimize a Python OpenCV computer vision script for our robot rover using Raspberry Pi 4. Must detect track lane markers and avoid ultrasonic-tagged obstacle zones.|120|Open|12|
+5|Mobile UI/UX Design for Ride-Sharing App|Create high-fidelity Figma interactive wireframes and a modern design system (12-15 screens) for an intra-campus student carpooling and cycle-sharing app.|95|Open|11|
+6|Alumni Mentorship & Internship Web Portal|Develop an interactive web portal connecting graduating seniors with alumni in tech, finance, and research. Features include 1-on-1 booking slots, profile portfolios, and chat integration. Built with React and Express.|160|Open|11|
+7|Tech Club Podcast Video & Audio Mastering|Edit a multi-cam 45-minute tech podcast episode featuring a guest speaker from Google. Clean background noise, add lower-thirds, chapter cards, and create 3 viral YouTube Shorts.|70|InProgress|2|1
+8|Deploy & Containerize Club Microservices|Dockerize existing Node.js & Python FastAPI microservices, set up CI/CD GitHub Actions pipelines, and deploy on AWS EC2 with SSL and Nginx reverse proxy configuration.|130|Open|2|
+9|Custom Merchandise E-Commerce Website|Set up a clean modern merchandise storefront for student jerseys, hoodies, and club badges. Responsive on mobile with shopping cart, size guides, and local campus delivery pickup options.|110|Open|13|15
+10|Web Poster - Hackathon Promotional Graphics|Design vector posters and social media banners for the annual engineering hackathon.|50|Completed|2|1
+11|Mobile Flutter App|Create cross-platform campus event app|150|Completed|16|
+12|Video editting at an event |shoot and edit videos|10|Open|19|15

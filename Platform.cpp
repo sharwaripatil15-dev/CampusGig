@@ -750,3 +750,265 @@ std::string Platform::getValidatedLine(const std::string& prompt) {
         return line.substr(first, last - first + 1);
     }
 }
+
+// ============================================================================
+// PART 2: REST API WRAPPER METHODS (Web / Headless Execution)
+// ============================================================================
+
+bool Platform::isCollegeEmail(const std::string& email) {
+    return endsWith(email, COLLEGE_EMAIL_DOMAIN);
+}
+
+User* Platform::registerUserApi(const std::string& name, const std::string& email,
+                                const std::string& password, const std::string& role,
+                                std::string& outError) {
+    if (role != "Freelancer" && role != "Client" && role != "Admin") {
+        outError = "Invalid account role. Must be Freelancer, Client, or Admin.";
+        return nullptr;
+    }
+
+    if (name.empty()) {
+        outError = "Full name cannot be blank.";
+        return nullptr;
+    }
+
+    if (email.empty()) {
+        outError = "Email address cannot be blank.";
+        return nullptr;
+    }
+
+    if (password.empty()) {
+        outError = "Password cannot be blank.";
+        return nullptr;
+    }
+
+    // College-Email Verification for Freelancers
+    if (role == "Freelancer") {
+        if (!endsWith(email, COLLEGE_EMAIL_DOMAIN)) {
+            outError = "Freelancer accounts require a valid college email ending in @vit.edu.";
+            return nullptr;
+        }
+    }
+
+    // Check if email already exists
+    if (findUserByEmail(email) != nullptr) {
+        outError = "An account with email \"" + email + "\" is already registered.";
+        return nullptr;
+    }
+
+    User* newUser = createUser(nextUserId, role, name, email, password);
+    if (newUser != nullptr) {
+        users.push_back(newUser);
+        nextUserId++;
+        saveData();
+        return newUser;
+    } else {
+        outError = "Failed to instantiate user for role: " + role;
+        return nullptr;
+    }
+}
+
+User* Platform::loginUserApi(const std::string& email, const std::string& password,
+                             std::string& outError) {
+    User* user = findUserByEmail(email);
+    if (user != nullptr && user->getPassword() == password) {
+        return user;
+    }
+    outError = "Invalid email or password. Please try again.";
+    return nullptr;
+}
+
+Job* Platform::postJobApi(int clientId, const std::string& title,
+                          const std::string& description, double budget,
+                          std::string& outError) {
+    User* user = findUserById(clientId);
+    if (!user || user->getRole() != "Client") {
+        outError = "Only clients are permitted to post jobs.";
+        return nullptr;
+    }
+
+    if (title.empty()) {
+        outError = "Job title cannot be blank.";
+        return nullptr;
+    }
+
+    if (description.empty()) {
+        outError = "Job description cannot be blank.";
+        return nullptr;
+    }
+
+    if (budget <= 0.0) {
+        outError = "Budget must be strictly positive (> $0.00).";
+        return nullptr;
+    }
+
+    jobs.emplace_back(nextJobId, title, description, budget, "Open", clientId);
+    Job* posted = &jobs.back();
+    nextJobId++;
+    saveData();
+    return posted;
+}
+
+bool Platform::applyForJobApi(int freelancerId, int jobId, double proposedPrice,
+                              std::string& outError) {
+    User* user = findUserById(freelancerId);
+    if (!user || user->getRole() != "Freelancer") {
+        outError = "Only verified freelancers are permitted to apply for jobs.";
+        return false;
+    }
+
+    Job* job = findJobById(jobId);
+    if (!job || job->getStatus() != "Open") {
+        outError = "Job ID not found or not currently Open.";
+        return false;
+    }
+
+    if (job->hasApplicant(freelancerId)) {
+        outError = "You have already applied for this job.";
+        return false;
+    }
+
+    if (proposedPrice <= 0.0) {
+        outError = "Proposed price must be strictly positive (> $0.00).";
+        return false;
+    }
+
+    Application app(jobId, freelancerId, proposedPrice, "Pending");
+    applications.push_back(app);
+    job->addApplicant(freelancerId);
+    saveData();
+    return true;
+}
+
+bool Platform::hireFreelancerApi(int clientId, int jobId, int freelancerId,
+                                 std::string& outError) {
+    Job* job = findJobById(jobId);
+    if (!job || job->getClientId() != clientId) {
+        outError = "Job not found or you do not have permission to modify it.";
+        return false;
+    }
+
+    if (job->getStatus() != "Open") {
+        outError = "This job is currently \"" + job->getStatus() + "\" and cannot accept new hires.";
+        return false;
+    }
+
+    bool applicantFound = false;
+    for (const auto& app : applications) {
+        if (app.getJobId() == jobId && app.getFreelancerId() == freelancerId && app.getStatus() == "Pending") {
+            applicantFound = true;
+            break;
+        }
+    }
+
+    if (!applicantFound) {
+        outError = "Freelancer ID " + std::to_string(freelancerId) + " is not an active applicant for this job.";
+        return false;
+    }
+
+    for (auto& app : applications) {
+        if (app.getJobId() == jobId) {
+            if (app.getFreelancerId() == freelancerId) {
+                app.setStatus("Accepted");
+            } else if (app.getStatus() == "Pending") {
+                app.setStatus("Rejected");
+            }
+        }
+    }
+
+    job->setStatus("InProgress");
+    saveData();
+    return true;
+}
+
+bool Platform::markJobCompleteApi(int clientId, int jobId, std::string& outError) {
+    Job* job = findJobById(jobId);
+    if (!job || job->getClientId() != clientId) {
+        outError = "Job not found or not owned by you.";
+        return false;
+    }
+
+    if (job->getStatus() != "InProgress") {
+        outError = "Job cannot be marked complete because status is \"" + job->getStatus() + "\" (must be InProgress).";
+        return false;
+    }
+
+    job->setStatus("Completed");
+    saveData();
+    return true;
+}
+
+bool Platform::removeUserApi(int adminId, int targetId, std::string& outError) {
+    User* admin = findUserById(adminId);
+    if (!admin || admin->getRole() != "Admin") {
+        outError = "Administrator privileges required to remove users.";
+        return false;
+    }
+
+    if (targetId == adminId) {
+        outError = "You cannot remove your own active administrator account.";
+        return false;
+    }
+
+    auto userIt = std::find_if(users.begin(), users.end(),
+                               [targetId](User* u) { return u->getId() == targetId; });
+    if (userIt == users.end()) {
+        outError = "User with ID " + std::to_string(targetId) + " not found.";
+        return false;
+    }
+
+    std::string removedRole = (*userIt)->getRole();
+    delete *userIt;
+    users.erase(userIt);
+
+    if (removedRole == "Client") {
+        auto jobIt = jobs.begin();
+        while (jobIt != jobs.end()) {
+            if (jobIt->getClientId() == targetId) {
+                int jId = jobIt->getId();
+                applications.erase(
+                    std::remove_if(applications.begin(), applications.end(),
+                                   [jId](const Application& a) { return a.getJobId() == jId; }),
+                    applications.end()
+                );
+                jobIt = jobs.erase(jobIt);
+            } else {
+                ++jobIt;
+            }
+        }
+    } else if (removedRole == "Freelancer") {
+        applications.erase(
+            std::remove_if(applications.begin(), applications.end(),
+                           [targetId](const Application& a) { return a.getFreelancerId() == targetId; }),
+            applications.end()
+        );
+        for (auto& job : jobs) {
+            auto& aIds = job.getApplicantIds();
+            aIds.erase(std::remove(aIds.begin(), aIds.end(), targetId), aIds.end());
+        }
+    }
+
+    saveData();
+    return true;
+}
+
+std::vector<Job> Platform::searchJobsApi(const std::string& keyword) const {
+    std::string lowerKeyword = toLowerString(keyword);
+    std::vector<Job> matches;
+    for (const auto& job : jobs) {
+        if (job.getStatus() == "Open") {
+            if (lowerKeyword.empty()) {
+                matches.push_back(job);
+            } else {
+                std::string titleLower = toLowerString(job.getTitle());
+                std::string descLower = toLowerString(job.getDescription());
+                if (titleLower.find(lowerKeyword) != std::string::npos ||
+                    descLower.find(lowerKeyword) != std::string::npos) {
+                    matches.push_back(job);
+                }
+            }
+        }
+    }
+    return matches;
+}
+

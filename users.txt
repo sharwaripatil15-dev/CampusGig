@@ -1,3 +1,15 @@
 1|Freelancer|Rohan Sharma|rohan@vit.edu|rohan123
 2|Client|Tech Club|tech@gmail.com|tech123
 3|Freelancer|Sharwari Patil|sharwari@vit.edu|12345
+4|Client|Innovate Labs|innovate@gmail.com|password123
+5|Admin|Campus Admin|admin@campusgig.com|admin123
+10|Client|Design & Media Society|media.society@gmail.com|media123
+11|Client|Entrepreneurship Cell|ecell.campus@gmail.com|ecell123
+12|Client|Robotics & IoT Lab|robotics.lab@gmail.com|robotics123
+13|Client|Campus Fest Committee|fest.committee@gmail.com|fest123
+14|Client|Campus Cafe & Bakery|cafe.campus@gmail.com|cafe123
+15|Freelancer|S|s@vit.edu|123456
+16|Client|Innovate Labs|innovate_390644696@gmail.com|password123
+18|Admin|Campus Admin|admin_1681024871@campusgig.com|adminpassword
+19|Client|s|sharwaripatil15@gmail.com|123456
+20|Admin|Ss|sharwari@gmail.com|123456

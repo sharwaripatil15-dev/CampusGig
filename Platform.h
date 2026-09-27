@@ -83,6 +83,31 @@ public:
     Job* findJobById(int id);
     const Job* findJobById(int id) const;
 
+    // Web / API Non-interactive Interface (Part 2)
+    const std::vector<User*>& getUsers() const { return users; }
+    const std::vector<Job>& getJobs() const { return jobs; }
+    std::vector<Job>& getJobs() { return jobs; }
+    const std::vector<Application>& getApplications() const { return applications; }
+    std::vector<Application>& getApplications() { return applications; }
+
+    static bool isCollegeEmail(const std::string& email);
+
+    User* registerUserApi(const std::string& name, const std::string& email,
+                          const std::string& password, const std::string& role,
+                          std::string& outError);
+    User* loginUserApi(const std::string& email, const std::string& password,
+                       std::string& outError);
+    Job* postJobApi(int clientId, const std::string& title,
+                    const std::string& description, double budget,
+                    std::string& outError);
+    bool applyForJobApi(int freelancerId, int jobId, double proposedPrice,
+                        std::string& outError);
+    bool hireFreelancerApi(int clientId, int jobId, int freelancerId,
+                           std::string& outError);
+    bool markJobCompleteApi(int clientId, int jobId, std::string& outError);
+    bool removeUserApi(int adminId, int targetUserId, std::string& outError);
+    std::vector<Job> searchJobsApi(const std::string& keyword) const;
+
     // Input Validation Hardening Helpers
     static int getValidatedInt(const std::string& prompt,
                                int minVal = std::numeric_limits<int>::min(),
