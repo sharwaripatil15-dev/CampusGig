@@ -1,0 +1,3 @@
+1|Freelancer|Rohan Sharma|rohan@vit.edu|rohan123
+2|Client|Tech Club|tech@gmail.com|tech123
+3|Freelancer|Sharwari Patil|sharwari@vit.edu|12345

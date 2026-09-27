@@ -1,0 +1,6 @@
+#ifndef CAMPUSGIG_FREELANCER_H
+#define CAMPUSGIG_FREELANCER_H
+
+#include "User.h"
+
+#endif // CAMPUSGIG_FREELANCER_H
